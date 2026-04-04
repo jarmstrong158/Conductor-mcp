@@ -1,57 +1,50 @@
-# Redis Operator MCP Server
+# Conductor MCP Server
 
-Exposes [Redis Operator](https://github.com/jarmstrong158/redis-operator) as an MCP server, giving Claude direct control over your local task orchestration platform.
+Gives Claude direct control over [Conductor](https://github.com/jarmstrong158/conductor) — your local task orchestration platform. Instead of clicking through a dashboard, tell Claude what you want automated and it does it.
 
-## What this enables
+## What this looks like
 
-Instead of clicking through the dashboard, tell Claude what you want:
+> **You:** Set up a nightly backup of my Documents folder. Keep the last 5 copies. Email me a summary when it runs.
+>
+> **Claude:** *(creates a Folder Backup worker with summary_email, schedules it for 2 AM daily)*
+> Done — "Nightly Docs Backup" will run at 2:00 AM, keep 5 copies, and email you a confirmation each time.
 
-> "Add a worker that runs my backup script every day at 9am and 5pm"
-> "Chain these three scripts together — run the first two in parallel, then the third after both finish"
-> "Show me everything that errored in the last hour"
-> "Create a folder watcher that moves .pdf files to my Documents folder"
+> **You:** My metrics script at C:\scripts\report.py produces output.xlsx. Run it every weekday at 8:30 PM and email the file to me.
+>
+> **Claude:** *(uses the Run + Email template, sets cron to weekdays, wires up Gmail)*
+> Worker "Daily Metrics Report" created. Firing it now to test... check your email.
 
-Claude reads the current state, takes action, and confirms the result.
+> **You:** What failed today?
+>
+> **Claude:** *(checks logs, pulls worker history)*
+> Worker #3 "Uptime Check" failed twice — the target URL returned 503. Last error was at 2:15 PM.
 
-## Requirements
-
-- Redis Operator running at http://127.0.0.1:5000
-- Python 3.10+
-- Claude Desktop app with MCP support
+No coding. No config files. No dashboard clicks. Just conversation.
 
 ## Setup
 
 ### Automatic (recommended)
 
-If you installed Redis Operator v3.0.2+, the MCP server is **already bundled and auto-registered**. Just:
+If you installed Conductor v3.0.2+, the MCP server is **already bundled and auto-registered**:
 
-1. Launch Redis Operator (it writes the MCP entry to Claude Desktop's config on startup)
+1. Launch Conductor (it writes the MCP entry to Claude Desktop's config on startup)
 2. Restart Claude Desktop
-3. Done — Claude now has the Redis Operator tools
+3. Done — Claude now has the Conductor tools
 
 ### Manual
 
-If you need to set it up manually:
-
-**1. Clone or download this MCP server**
+1. Clone this repo or copy `server.py` somewhere
 
 ```
-git clone https://github.com/jarmstrong158/redis-operator-mcp
+git clone https://github.com/jarmstrong158/conductor-mcp
 ```
 
-Or just copy `server.py` somewhere convenient.
-
-**2. Add to Claude Desktop config**
-
-Open your Claude Desktop config file:
-- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
-
-Add the MCP server:
+2. Add to Claude Desktop config (`%APPDATA%\Claude\claude_desktop_config.json`):
 
 ```json
 {
   "mcpServers": {
-    "redis-operator": {
+    "conductor": {
       "command": "python",
       "args": ["C:\\path\\to\\server.py"]
     }
@@ -59,13 +52,15 @@ Add the MCP server:
 }
 ```
 
-Replace the path with wherever you put `server.py`.
+3. Start Conductor first, then restart Claude Desktop
 
-**3. Start Redis Operator first, then restart Claude Desktop**
+## Requirements
 
-Redis Operator must be running before Claude can use the tools. The MCP server connects to it at http://127.0.0.1:5000.
+- Conductor running at http://127.0.0.1:5000
+- Python 3.10+
+- Claude Desktop with MCP support
 
-## Available tools
+## Available Tools
 
 | Tool | What it does |
 |------|-------------|
@@ -74,39 +69,46 @@ Redis Operator must be running before Claude can use the tools. The MCP server c
 | `update_worker` | Modify an existing worker |
 | `delete_worker` | Remove a worker |
 | `pause_worker` | Toggle pause/resume |
-| `run_worker_now` | Fire immediately (logged as MANUAL) |
-| `get_worker_history` | Last 10 runs for a worker |
+| `run_worker_now` | Fire immediately |
+| `get_worker_history` | Run history for a worker |
 | `pause_all_workers` | Pause everything |
 | `delete_all_workers` | Wipe all workers and chains |
 | `list_chains` | Show all chains |
-| `create_chain` | Build a new pipeline |
+| `create_chain` | Build a multi-step pipeline |
 | `run_chain_now` | Fire a chain immediately |
 | `delete_chain` | Remove a chain |
-| `get_chain_history` | Last 10 runs for a chain |
+| `get_chain_history` | Run history for a chain |
 | `list_groups` | Show all groups |
 | `create_group` | Create a group |
-| `delete_group` | Remove a group (unassigns members) |
+| `delete_group` | Remove a group |
 | `create_worker_from_template` | Use a built-in template |
 | `export_all` | Export everything as JSON |
 | `get_logs` | Read the debug log |
 | `get_redis_status` | Check Redis connection |
-| `check_for_update` | Check for newer Redis Operator version |
+| `check_for_update` | Check for newer version |
 
-## Schedule formats
+## Schedule Formats
 
-- **fixed**: `"09:00"` or `"09:00,14:30,17:00"` — fires daily at those times
-- **interval**: `"2h"`, `"30m"`, `"1h 30m"` — repeating loop
-- **cron**: `"0 9 * * 1-5"` — full cron expression
+- **Fixed**: `"09:00"` or `"09:00,14:30,17:00"` — fires daily at those times
+- **Interval**: `"2h"`, `"30m"`, `"1h 30m"` — repeating loop
+- **Cron**: `"0 9 * * 1-5"` — full cron expression
 
-## Parallel chain steps
-
-Assign the same stage number to steps you want to run simultaneously:
+## Parallel Chain Steps
 
 ```
 Stage 0: step A ──┐
-Stage 0: step B ──┤ (both run at once, chain waits for both)
+Stage 0: step B ──┤ (both run at once)
                   ↓
-Stage 1: step C   (runs after A and B both finish)
+Stage 1: step C   (runs after A and B finish)
 ```
 
-Default behavior is fully sequential (each step gets its own unique stage).
+## Templates
+
+| Type | Config | Email |
+|------|--------|-------|
+| `folder_backup` | source, dest, keep | summary_email |
+| `file_cleanup` | folder, pattern, days | summary_email |
+| `folder_watcher` | watch, rules [{ext, dest, email_to}] | Per-rule |
+| `uptime_check` | url, log_file | alert_email |
+| `open_url` | url | — |
+| `run_and_email` | script_path, output_file, email_to | Sends file |
