@@ -21,6 +21,18 @@ Claude reads the current state, takes action, and confirms the result.
 
 ## Setup
 
+### Automatic (recommended)
+
+If you installed Redis Operator v3.0.2+, the MCP server is **already bundled and auto-registered**. Just:
+
+1. Launch Redis Operator (it writes the MCP entry to Claude Desktop's config on startup)
+2. Restart Claude Desktop
+3. Done — Claude now has the Redis Operator tools
+
+### Manual
+
+If you need to set it up manually:
+
 **1. Clone or download this MCP server**
 
 ```
