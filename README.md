@@ -1,5 +1,7 @@
 # Conductor MCP Server
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 > This is the **MCP layer** for [Conductor](https://github.com/jarmstrong158/Conductor) — the full automation platform (web dashboard, scheduler, Redis, templates, email) lives in that repo. This repo is just the thin server that exposes Conductor's REST API as MCP tools.
 
 Gives Claude direct control over [Conductor](https://github.com/jarmstrong158/Conductor) — your local task orchestration platform. Instead of clicking through a dashboard, tell Claude what you want automated and it does it.
