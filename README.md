@@ -2,7 +2,44 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> This is the **MCP layer** for [Conductor](https://github.com/jarmstrong158/Conductor) — the full automation platform (web dashboard, scheduler, Redis, templates, email) lives in that repo. This repo is just the thin server that exposes Conductor's REST API as MCP tools.
+> # ⚠️ DEPRECATED — use [Conductor](https://github.com/jarmstrong158/Conductor) instead
+>
+> **This repository is no longer maintained.** It is a copy of an older revision of
+> `server.py` from the main [Conductor](https://github.com/jarmstrong158/Conductor)
+> repo, which is where the MCP server is now developed, tested and shipped.
+>
+> **You do not need to clone this repo.** The MCP server is bundled with Conductor
+> and auto-registers itself with Claude Desktop on first launch.
+>
+> ### Why you should not use this copy
+>
+> Both versions expose the same 30 tools, so this is not about missing features —
+> it is about safety. The maintained copy in Conductor has auto-launch logic that
+> this one lacks entirely:
+>
+> | | this repo | Conductor/server.py |
+> |---|---|---|
+> | MCP tools | 30 | 30 |
+> | Auto-launches Conductor if it isn't running | ❌ none | ✅ yes |
+> | Process check (`tasklist`) before launching | ❌ | ✅ |
+> | `O_EXCL` file lock against concurrent launches | ❌ | ✅ |
+> | Last updated | May 2026 | actively maintained |
+>
+> Conductor takes several seconds to bind port 5000 after starting. A port-check
+> alone races during that window and can spawn multiple Conductor instances —
+> multiple schedulers firing the same cron, which has previously caused cascading
+> subprocess explosions. The maintained version guards against this with both a
+> process check and a file lock. This copy has no auto-launch at all, so it simply
+> fails if Conductor isn't already running.
+>
+> **Migration:** delete your manual `conductor-mcp` entry from
+> `%APPDATA%\Claude\claude_desktop_config.json`, install or launch
+> [Conductor](https://github.com/jarmstrong158/Conductor), and restart Claude
+> Desktop. It re-registers itself pointing at the maintained server.
+
+---
+
+> This is the **MCP layer** for [Conductor](https://github.com/jarmstrong158/Conductor) — the full automation platform (web dashboard, scheduler, templates, email) lives in that repo. This repo is just the thin server that exposes Conductor's REST API as MCP tools.
 
 Gives Claude direct control over [Conductor](https://github.com/jarmstrong158/Conductor) — your local task orchestration platform. Instead of clicking through a dashboard, tell Claude what you want automated and it does it.
 
@@ -88,7 +125,7 @@ git clone https://github.com/jarmstrong158/conductor-mcp
 | `create_worker_from_template` | Use a built-in template |
 | `export_all` | Export everything as JSON |
 | `get_logs` | Read the debug log |
-| `get_redis_status` | Check Redis connection |
+| `get_redis_status` | Check Redis connection *(obsolete — Conductor no longer uses Redis; the maintained server exposes `get_status` instead)* |
 | `check_for_update` | Check for newer version |
 
 ## Schedule Formats
